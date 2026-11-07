@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Викторина по Python</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f7fc; margin: 0; padding: 20px; color: #1e2a3a; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { text-align: center; color: #2c3e50; margin-bottom: 8px; }
+        .subtitle { text-align: center; color: #5a6c7d; margin-bottom: 30px; font-size: 0.95rem; }
+        
+        .card { background: #ffffff; border-radius: 14px; padding: 22px 26px; margin-bottom: 24px; box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06); border: 1px solid #e4eaf0; }
+        .card-title { font-size: 1.1rem; font-weight: 700; color: #1a5276; margin-bottom: 12px; display: flex; align-items: center; gap: 10px; }
+        .badge { background: #1a5276; color: #fff; border-radius: 50%; width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; font-size: 0.85rem; flex-shrink: 0; }
+        .question-text { font-size: 1.05rem; margin-bottom: 14px; line-height: 1.5; }
+        .options { display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; }
+        .option-label { display: flex; align-items: center; gap: 10px; padding: 10px 14px; background: #f8fafc; border: 2px solid #e4eaf0; border-radius: 8px; cursor: pointer; transition: all 0.2s; }
+        .option-label:hover { background: #eef4fb; border-color: #b8d4ea; }
+        .option-label input { cursor: pointer; transform: scale(1.2); }
+        .hint-btn { background: none; border: none; color: #8e44ad; font-size: 0.9rem; cursor: pointer; padding: 0; margin-bottom: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+        .hint-btn:hover { text-decoration: underline; }
+        .hint-text { display: none; background: #f4ecf7; border-left: 4px solid #8e44ad; padding: 10px 15px; border-radius: 0 8px 8px 0; margin-bottom: 15px; font-size: 0.9rem; color: #4a235a; line-height: 1.4; }
+        .hint-text.show { display: block; }
+        
+        .code-area { width: 100%; min-height: 100px; padding: 14px; font-family: 'Consolas', monospace; font-size: 0.95rem; border: 2px solid #d0dbe6; border-radius: 10px; background: #fbfdff; resize: vertical; margin-bottom: 12px; }
+        .code-area:focus { outline: none; border-color: #2e86c1; background: #ffffff; }
+        
+        .btn { padding: 10px 20px; background: #2e86c1; color: #fff; border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn:hover { background: #1f6fa0; }
+        .btn-check { background: #27ae60; }
+        .btn-check:hover { background: #1e8449; }
+        
+        .result { margin-top: 12px; font-size: 0.95rem; font-weight: 600; padding: 10px 14px; border-radius: 8px; display: none; }
+        .result.correct { display: block; background: #d5f5e3; color: #1e8449; border: 1px solid #a9dfbf; }
+        .result.wrong { display: block; background: #fadbd8; color: #922b21; border: 1px solid #f5b7b1; }
+        
+        .toolbar { text-align: center; margin-top: 30px; margin-bottom: 30px; }
+        .btn-reset { background: #e74c3c; padding: 12px 30px; font-size: 1.05rem; }
+        .btn-reset:hover { background: #c0392b; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>🐍 Викторина по Python</h1>
+    <p class="subtitle">20 вопросов и 10 задач. Порядок случайный. Проверьте свои знания!</p>
+
+    <div id="app"></div>
+
+    <div class="toolbar">
+        <button class="btn btn-reset" onclick="location.reload()">🔄 Перемешать заново и пройти снова</button>
+    </div>
+</div>
+
+<script>
+    // ========== БАЗА ДАННЫХ ==========
+    const quizData = [
+        // ВОПРОСЫ (20 штук)
+        { type: 'q', text: 'Что выведет команда: print("Привет")?', options: ['Привет', '"Привет"', 'Ошибка', 'print'], answer: 'Привет', hint: 'print выводит текст на экран без кавычек.' },
+        { type: 'q', text: 'Какая команда используется для получения данных от пользователя?', options: ['print()', 'input()', 'int()', 'str()'], answer: 'input()', hint: 'Эта команда "спрашивает" у пользователя данные и возвращает их.' },
+        { type: 'q', text: 'Что делает команда int()?', options: ['Превращает в текст', 'Превращает в целое число', 'Выводит на экран', 'Удаляет переменную'], answer: 'Превращает в целое число', hint: 'int происходит от английского integer (целое число).' },
+        { type: 'q', text: 'Как правильно создать переменную с именем "age" и значением 15?', options: ['age = 15', '15 = age', 'int age = 15', 'var age = 15'], answer: 'age = 15', hint: 'В Python сначала пишется имя переменной, потом знак равно =, потом значение.' },
+        { type: 'q', text: 'Что выведет код: print(5 + 3)?', options: ['53', '8', '5 + 3', 'Ошибка'], answer: '8', hint: 'Без кавычек Python воспринимает числа как математические значения и складывает их.' },
+        { type: 'q', text: 'Что выведет код: print("5" + "3")?', options: ['8', '53', 'Ошибка', '5 + 3'], answer: '53', hint: 'Если числа в кавычках, они склеиваются при помощи плюса.' },
+        { type: 'q', text: 'Какая команда превращает число в текст?', options: ['int()', 'str()', 'float()', 'print()'], answer: 'str()', hint: 'Команда str() преобразует значение в текстовый вид.' },
+        { type: 'q', text: 'Что выведет: print(len("Python"))?', options: ['6', '5', 'Ошибка', 'Python'], answer: '6', hint: 'Функция len() считает количество символов. P-y-t-h-o-n = 6.' },
+        { type: 'q', text: 'Как запросить число и сразу превратить его в целое?', options: ['int(input())', 'input(int())', 'str(input())', 'print(int())'], answer: 'int(input())', hint: 'Сначала input() получает данные, затем int() превращает их в число.' },
+        { type: 'q', text: 'Что выведет: print(10 / 2)?', options: ['5', '5.0', '2', 'Ошибка'], answer: '5.0', hint: 'Одинарный слэш / всегда даёт результат с точкой (дробное число).' },
+        { type: 'q', text: 'Что выведет: print(10 // 3)?', options: ['3.33', '3', '1', 'Ошибка'], answer: '3', hint: 'Двойной слэш // — это целочисленное деление (отбрасывает остаток).' },
+        { type: 'q', text: 'Что выведет: print(10 % 3)?', options: ['3', '1', '0', 'Ошибка'], answer: '1', hint: 'Знак % вычисляет остаток от деления. 10 = 3*3 + 1.' },
+        { type: 'q', text: 'Что делает команда str() при выводе?', options: ['Делает буквы заглавными', 'Превращает значение в текст', 'Удаляет пробелы', 'Считает длину'], answer: 'Превращает значение в текст', hint: 'str нужна, чтобы приклеить число к тексту через плюс.' },
+        { type: 'q', text: 'Что выведет: name = "Иван"; print("Привет, " + name)?', options: ['Привет, name', 'Привет, Иван', 'Ошибка', 'Иван'], answer: 'Привет, Иван', hint: 'Переменная name заменяется на её значение (Иван).' },
+        { type: 'q', text: 'Что нужно сделать с input(), чтобы сложить введённые числа?', options: ['Сразу сложить', 'Обернуть в int()', 'Обернуть в str()', 'Ничего не делать'], answer: 'Обернуть в int()', hint: 'input() по умолчанию возвращает текст, поэтому нужно int() для математики.' },
+        { type: 'q', text: 'Что выведет: print("A" * 3)?', options: ['AAA', 'A3', 'Ошибка', '3A'], answer: 'AAA', hint: 'Умножение текста на число повторяет его несколько раз.' },
+        { type: 'q', text: 'Как вывести несколько слов через пробел?', options: ['print("a", "b")', 'print("a" + "b")', 'print("a" "b")', 'print("a" - "b")'], answer: 'print("a", "b")', hint: 'Запятая в print() автоматически добавляет пробел между элементами.' },
+        { type: 'q', text: 'Что выведет: print(type(5))?', options: ['<class \'int\'>', '<class \'str\'>', '5', 'Ошибка'], answer: '<class \'int\'>', hint: 'Функция type() показывает тип данных. 5 — это целое число (int).' },
+        { type: 'q', text: 'Какое имя переменной является правильным?', options: ['2name', 'my-name', 'my_name', 'my name'], answer: 'my_name', hint: 'Имя переменной может содержать буквы, цифры и _, но не может начинаться с цифры или содержать дефис/пробел.' },
+        { type: 'q', text: 'Что выведет: a = 5; b = 2; print(a * b)?', options: ['7', '52', '10', 'Ошибка'], answer: '10', hint: 'Звёздочка * — это умножение. 5 * 2 = 10.' },
+
+        // ЗАДАЧИ (10 штук)
+        { type: 't', text: 'Напишите код, который выведет на экран слово Python.', check: (code) => { return code.replace(/\s+/g, '') === 'print("Python")' || code.replace(/\s+/g, '') === "print('Python')"; }, hint: 'Используйте функцию print() и не забудьте кавычки.' },
+        { type: 't', text: 'Напишите код: запросите у пользователя имя и сохраните его в переменную name.', check: (code) => { return code.replace(/\s+/g, '').includes('name=input()'); }, hint: 'Используйте input() и присвойте результат переменной через =.' },
+        { type: 't', text: 'Напишите код: сложите числа 15 и 25 и выведите результат на экран.', check: (code) => { return code.replace(/\s+/g, '') === 'print(15+25)' || code.replace(/\s+/g, '') === 'print(25+15)'; }, hint: 'Используйте print() и знак + внутри него.' },
+        { type: 't', text: 'Напишите код, который запросит у пользователя возраст, превратит его в целое число и сохранит в переменную age.', check: (code) => { return code.includes('age') && code.includes('int(') && code.includes('input('); }, hint: 'Оберните input() в int() и присвойте переменной age: age = int(input(...)).' },
+        { type: 't', text: 'Напишите код: создайте переменную x = 10 и выведите её на экран.', check: (code) => { return code.replace(/\s+/g, '').includes('x=10') && code.includes('print(x)'); }, hint: 'Сначала напишите x = 10, затем print(x).' },
+        { type: 't', text: 'Напишите код, который выведет "Привет" и "Мир" через пробел.', check: (code) => { return code.replace(/\s+/g, '').includes('print("Привет","Мир")') || code.replace(/\s+/g, '').includes("print('Привет','Мир')"); }, hint: 'Используйте print("Привет", "Мир"). Запятая добавит пробел.' },
+        { type: 't', text: 'Напишите код: запросите число, возведите его в квадрат и выведите результат.', check: (code) => { return code.includes('int(input(') && code.includes('**2') && code.includes('print('); }, hint: 'Сначала num = int(input()), затем print(num ** 2).' },
+        { type: 't', text: 'Напишите код, который выведет длину текста "Программирование".', check: (code) => { return code.replace(/\s+/g, '').includes('print(len("Программирование"))'); }, hint: 'Используйте len() внутри print().' },
+        { type: 't', text: 'Напишите код: создайте переменную word = "Python", выведите её в верхнем регистре.', check: (code) => { return code.replace(/\s+/g, '').includes('word="Python"') && code.includes('word.upper()'); }, hint: 'Используйте метод .upper() для переменной word.' },
+        { type: 't', text: 'Напишите код: запросите два числа (через int(input())), сложите их и выведите сумму.', check: (code) => { return (code.match(/int\(input/g) || []).length >= 2 && code.includes('+') && code.includes('print('); }, hint: 'Запросите два раза int(input()) в разные переменные, затем выведите их сумму.' }
+    ];
+
+    // ========== ЛОГИКА ==========
+    
+    // Перемешивание массива (алгоритм Фишера-Йетса)
+    function shuffle(array) {
+        let currentIndex = array.length, randomIndex;
+        while (currentIndex !== 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+            [array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]];
+        }
+        return array;
+    }
+
+    // Отрисовка страницы
+    function renderApp() {
+        const app = document.getElementById('app');
+        let html = '';
+        
+        // Перемешиваем данные
+        const shuffledData = shuffle([...quizData]);
+        
+        let qCounter = 0;
+        let tCounter = 0;
+
+        shuffledData.forEach((item, index) => {
+            if (item.type === 'q') {
+                qCounter++;
+                html += `
+                    <div class="card" id="card-q-${index}">
+                        <div class="card-title"><span class="badge">?</span>Вопрос ${qCounter}</div>
+                        <div class="question-text">${item.text}</div>
+                        <div class="options">
+                            ${item.options.map((opt, i) => `
+                                <label class="option-label">
+                                    <input type="radio" name="q-${index}" value="${opt.replace(/"/g, '&quot;')}">
+                                    <span>${opt}</span>
+                                </label>
+                            `).join('')}
+                        </div>
+                        <button class="hint-btn" onclick="toggleHint(${index})">💡 Показать подсказку</button>
+                        <div class="hint-text" id="hint-${index}">${item.hint}</div>
+                        <button class="btn btn-check" onclick="checkQuestion(${index})">Проверить</button>
+                        <div class="result" id="result-${index}"></div>
+                    </div>
+                `;
+            } else {
+                tCounter++;
+                html += `
+                    <div class="card" id="card-t-${index}">
+                        <div class="card-title"><span class="badge">💻</span>Задача ${tCounter}</div>
+                        <div class="question-text">${item.text}</div>
+                        <textarea class="code-area" id="code-${index}" placeholder="Напишите код здесь..."></textarea>
+                        <button class="hint-btn" onclick="toggleHint(${index})">💡 Показать подсказку</button>
+                        <div class="hint-text" id="hint-${index}">${item.hint}</div>
+                        <button class="btn btn-check" onclick="checkTask(${index})">Проверить</button>
+                        <div class="result" id="result-${index}"></div>
+                    </div>
+                `;
+            }
+        });
+
+        app.innerHTML = html;
+        
+        // Сохраняем ссылку на данные для проверки
+        window._shuffledData = shuffledData;
+    }
+
+    function toggleHint(index) {
+        const hint = document.getElementById('hint-' + index);
+        hint.classList.toggle('show');
+    }
+
+    function checkQuestion(index) {
+        const item = window._shuffledData[index];
+        const selected = document.querySelector(`input[name="q-${index}"]:checked`);
+        const resultEl = document.getElementById('result-' + index);
+        
+        if (!selected) {
+            resultEl.textContent = "Выберите вариант ответа!";
+            resultEl.className = "result wrong";
+            return;
+        }
+
+        if (selected.value === item.answer.replace(/"/g, '&quot;')) {
+            resultEl.textContent = "✅ Верно!";
+            resultEl.className = "result correct";
+        } else {
+            resultEl.textContent = "❌ Неверно. Попробуйте ещё раз.";
+            resultEl.className = "result wrong";
+        }
+    }
+
+    function checkTask(index) {
+        const item = window._shuffledData[index];
+        const code = document.getElementById('code-' + index).value;
+        const resultEl = document.getElementById('result-' + index);
+
+        if (!code.trim()) {
+            resultEl.textContent = "Напишите код перед проверкой!";
+            resultEl.className = "result wrong";
+            return;
+        }
+
+        // Очищаем код от лишних пробелов для более точной проверки
+        const cleanCode = code.trim();
+
+        if (item.check(cleanCode)) {
+            resultEl.textContent = "✅ Отлично! Код написан верно.";
+            resultEl.className = "result correct";
+        } else {
+            resultEl.textContent = "❌ Код не совсем правильный. Проверьте синтаксис и подсказку.";
+            resultEl.className = "result wrong";
+        }
+    }
+
+    // Запуск при загрузке
+    document.addEventListener('DOMContentLoaded', renderApp);
+</script>
+</body>
+</html>
